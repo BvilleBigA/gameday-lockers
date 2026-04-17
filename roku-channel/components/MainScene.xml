@@ -1,6 +1,12 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <component name="MainScene" extends="Scene">
   <children>
+    <Rectangle
+      id="baseBg"
+      width="1920"
+      height="1080"
+      color="0x060607FF" />
+
     <Poster
       id="bgPoster"
       width="1920"
@@ -12,44 +18,106 @@
       id="overlay"
       width="1920"
       height="1080"
-      color="0x000000AA"
+      color="0x040405DD"
+      visible="true" />
+
+    <Rectangle
+      id="panelShadow"
+      width="1448"
+      height="648"
+      translation="[236,196]"
+      color="0x000000A0"
+      visible="true" />
+
+    <Rectangle
+      id="panelFrame"
+      width="1432"
+      height="632"
+      translation="[244,204]"
+      color="0x7D6A3A66"
+      visible="true" />
+
+    <Rectangle
+      id="panel"
+      width="1420"
+      height="620"
+      translation="[250,210]"
+      color="0x0E0E10EE"
+      visible="true" />
+
+    <Rectangle
+      id="panelInnerBorder"
+      width="1412"
+      height="612"
+      translation="[254,214]"
+      color="0x00000000"
+      visible="true" />
+
+    <Rectangle id="cornerTL" width="44" height="4" translation="[284,248]" color="0xC4A052FF" visible="true" />
+    <Rectangle id="cornerTLv" width="4" height="36" translation="[284,248]" color="0xC4A052FF" visible="true" />
+    <Rectangle id="cornerTR" width="44" height="4" translation="[1592,248]" color="0xC4A052FF" visible="true" />
+    <Rectangle id="cornerTRv" width="4" height="36" translation="[1632,248]" color="0xC4A052FF" visible="true" />
+    <Rectangle id="cornerBL" width="44" height="4" translation="[284,786]" color="0xC4A052FF" visible="true" />
+    <Rectangle id="cornerBLv" width="4" height="36" translation="[284,754]" color="0xC4A052FF" visible="true" />
+    <Rectangle id="cornerBR" width="44" height="4" translation="[1592,786]" color="0xC4A052FF" visible="true" />
+    <Rectangle id="cornerBRv" width="4" height="36" translation="[1632,754]" color="0xC4A052FF" visible="true" />
+
+    <Rectangle
+      id="goldRule"
+      width="540"
+      height="4"
+      translation="[690,385]"
+      color="0xC4A052FF"
       visible="true" />
 
     <Label
       id="titleLabel"
-      translation="[120,120]"
-      width="1680"
-      horizAlign="left"
+      translation="[250,265]"
+      width="1420"
+      horizAlign="center"
       text="Gameday Lockers"
-      color="0xFFFFFFFF" />
+      color="0xB8BABFFF" />
+
+    <Label
+      id="subtitleLabel"
+      translation="[250,320]"
+      width="1420"
+      horizAlign="center"
+      text="ELEVATE THE LOCKER ROOM"
+      color="0x8A8884FF" />
 
     <Label
       id="statusLabel"
-      translation="[120,220]"
-      width="1680"
-      horizAlign="left"
+      translation="[250,430]"
+      width="1420"
+      horizAlign="center"
       text="Loading..."
-      color="0xEAEAEAFF" />
+      color="0x8A8884FF" />
 
     <Label
       id="codeLabel"
-      translation="[120,320]"
-      width="1680"
-      horizAlign="left"
+      translation="[250,500]"
+      width="1420"
+      horizAlign="center"
       text=""
-      color="0xF9D670FF" />
+      color="0xE3C76DFF" />
 
     <Label
       id="helpLabel"
-      translation="[120,420]"
-      width="1680"
-      horizAlign="left"
+      translation="[250,580]"
+      width="1420"
+      horizAlign="center"
       text=""
-      color="0xCFCFCFFF" />
+      color="0xF2F0ECFF" />
 
     <Timer
       id="pollTimer"
       duration="3"
+      repeat="true" />
+
+    <Timer
+      id="fxTimer"
+      duration="0.5"
       repeat="true" />
   </children>
   <script type="text/brightscript" uri="pkg:/components/MainScene.brs" />

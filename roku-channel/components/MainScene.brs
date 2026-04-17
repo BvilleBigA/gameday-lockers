@@ -3,16 +3,25 @@ sub init()
   m.storageSection = "gameday_lockers"
   m.storageKey = "pairing_code"
   m.currentMode = "pairing"
+  m.fxTick = 0
 
   m.bgPoster = m.top.findNode("bgPoster")
   m.overlay = m.top.findNode("overlay")
+  m.panelShadow = m.top.findNode("panelShadow")
+  m.panelFrame = m.top.findNode("panelFrame")
+  m.panel = m.top.findNode("panel")
+  m.panelInnerBorder = m.top.findNode("panelInnerBorder")
+  m.goldRule = m.top.findNode("goldRule")
   m.titleLabel = m.top.findNode("titleLabel")
+  m.subtitleLabel = m.top.findNode("subtitleLabel")
   m.statusLabel = m.top.findNode("statusLabel")
   m.codeLabel = m.top.findNode("codeLabel")
   m.helpLabel = m.top.findNode("helpLabel")
   m.pollTimer = m.top.findNode("pollTimer")
+  m.fxTimer = m.top.findNode("fxTimer")
 
   m.pollTimer.observeField("fire", "onPollTimer")
+  m.fxTimer.observeField("fire", "onFxTimer")
 
   savedCode = loadPairingCode()
   if isValidPairingCode(savedCode)
@@ -24,10 +33,22 @@ sub init()
 
   renderPairingState("Waiting for registration...")
   m.pollTimer.control = "start"
+  m.fxTimer.control = "start"
 end sub
 
 sub onPollTimer()
   pollServer()
+end sub
+
+sub onFxTimer()
+  m.fxTick = m.fxTick + 1
+  if m.fxTick mod 2 = 0
+    m.goldRule.color = "0xE3C76DFF"
+    m.panelFrame.color = "0xC4A05277"
+  else
+    m.goldRule.color = "0xC4A052FF"
+    m.panelFrame.color = "0x7D6A3A66"
+  end if
 end sub
 
 sub pollServer()
@@ -86,7 +107,13 @@ sub loadCurrentScene()
   end if
 
   m.overlay.visible = false
+  m.panelShadow.visible = false
+  m.panelFrame.visible = false
+  m.panel.visible = false
+  m.panelInnerBorder.visible = false
+  m.goldRule.visible = false
   m.titleLabel.visible = false
+  m.subtitleLabel.visible = false
   m.statusLabel.visible = false
   m.codeLabel.visible = false
   m.helpLabel.visible = false
@@ -107,40 +134,61 @@ end function
 
 sub renderPairingState(statusText as String)
   m.overlay.visible = true
+  m.panelShadow.visible = true
+  m.panelFrame.visible = true
+  m.panel.visible = true
+  m.panelInnerBorder.visible = true
+  m.goldRule.visible = true
   m.titleLabel.visible = true
+  m.subtitleLabel.visible = true
   m.statusLabel.visible = true
   m.codeLabel.visible = true
   m.helpLabel.visible = true
 
-  m.titleLabel.text = "Gameday Lockers"
+  m.titleLabel.text = "GAMEDAY LOCKERS"
+  m.subtitleLabel.text = "ELEVATE THE LOCKER ROOM"
   m.statusLabel.text = statusText
-  m.codeLabel.text = "Code: " + m.pairingCode
-  m.helpLabel.text = "On your phone or laptop open: lockers.bvillebiga.com/admin/displays"
+  m.codeLabel.text = m.pairingCode
+  m.helpLabel.text = "Admin > Displays > Add screens at lockers.bvillebiga.com"
 end sub
 
 sub renderLiveLoadingState()
   m.overlay.visible = true
+  m.panelShadow.visible = true
+  m.panelFrame.visible = true
+  m.panel.visible = true
+  m.panelInnerBorder.visible = true
+  m.goldRule.visible = true
   m.titleLabel.visible = true
+  m.subtitleLabel.visible = true
   m.statusLabel.visible = true
   m.codeLabel.visible = true
   m.helpLabel.visible = true
 
-  m.titleLabel.text = "Gameday Lockers"
+  m.titleLabel.text = "GAMEDAY LOCKERS"
+  m.subtitleLabel.text = "SCREEN CONNECTED"
   m.statusLabel.text = "Registered. Loading scene..."
-  m.codeLabel.text = "Screen: " + m.pairingCode
+  m.codeLabel.text = m.pairingCode
   m.helpLabel.text = "Connected to lockers.bvillebiga.com"
 end sub
 
 sub renderLiveErrorState(statusText as String)
   m.overlay.visible = true
+  m.panelShadow.visible = true
+  m.panelFrame.visible = true
+  m.panel.visible = true
+  m.panelInnerBorder.visible = true
+  m.goldRule.visible = true
   m.titleLabel.visible = true
+  m.subtitleLabel.visible = true
   m.statusLabel.visible = true
   m.codeLabel.visible = true
   m.helpLabel.visible = true
 
-  m.titleLabel.text = "Gameday Lockers"
+  m.titleLabel.text = "GAMEDAY LOCKERS"
+  m.subtitleLabel.text = "NETWORK STATUS"
   m.statusLabel.text = statusText
-  m.codeLabel.text = "Screen: " + m.pairingCode
+  m.codeLabel.text = m.pairingCode
   m.helpLabel.text = "Retrying automatically..."
 end sub
 

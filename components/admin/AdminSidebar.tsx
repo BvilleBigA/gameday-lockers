@@ -18,7 +18,7 @@ function NavLink({
       href={href}
       className={`block rounded-r-md border-l-4 py-2.5 pl-3 pr-2 text-sm font-semibold uppercase tracking-wide transition-colors ${
         active
-          ? "border-[#52A88E] bg-[#52A88E]/20 text-white"
+          ? "border-[#c4a052] bg-[#c4a052]/20 text-[#f2f0ec]"
           : "border-transparent text-slate-400 hover:bg-white/5 hover:text-white"
       }`}
     >
@@ -29,6 +29,7 @@ function NavLink({
 
 export function AdminSidebar() {
   const { data: session } = useSession();
+  const signOutUrl = typeof window === "undefined" ? "/" : `${window.location.origin}/`;
   const isAdmin = session?.user?.role === "ADMIN";
   const memberships = session?.user?.orgMemberships ?? [];
   const canEditContent =
@@ -41,14 +42,14 @@ export function AdminSidebar() {
   const contentActive = pathname.startsWith("/admin/content");
 
   return (
-    <aside className="flex w-72 shrink-0 flex-col border-r border-black/20 bg-[#222] text-white">
+    <aside className="flex w-72 shrink-0 flex-col border-r border-[#2a2826] bg-[#0e0e10] text-white">
       <div className="border-b border-white/10 px-4 py-6">
         <Link href="/admin" className="flex items-center gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#52A88E] text-[10px] font-bold leading-tight tracking-tight text-white shadow-inner">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#c4a052] text-[10px] font-bold leading-tight tracking-tight text-black shadow-inner">
             GL
           </div>
           <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#52A88E]">Gameday</p>
+            <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#c4a052]">Gameday</p>
             <p className="text-sm font-bold uppercase tracking-wide text-white">Lockers</p>
           </div>
         </Link>
@@ -117,14 +118,14 @@ export function AdminSidebar() {
         ) : null}
         <button
           type="button"
-          onClick={() => void signOut({ callbackUrl: "/" })}
+          onClick={() => void signOut({ callbackUrl: signOutUrl })}
           className="block w-full rounded-md border border-white/15 py-2 text-center text-xs font-semibold uppercase tracking-wider text-slate-300 hover:bg-white/5"
         >
           Sign out
         </button>
         <Link
           href="/"
-          className="block text-xs font-semibold uppercase tracking-wider text-slate-500 hover:text-[#52A88E]"
+          className="block text-xs font-semibold uppercase tracking-wider text-slate-500 hover:text-[#c4a052]"
         >
           ← Public site
         </Link>
