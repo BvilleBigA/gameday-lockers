@@ -14,6 +14,12 @@ sub execute()
 
   if reqType = "requestServerPairingCode"
     result = requestServerPairingCode()
+    if result.ok = true and result.json <> invalid and result.json.code <> invalid then
+      code = result.json.code
+      if type(code) = "roString" or type(code) = "String" then
+        m.top.pairingCode = code
+      end if
+    end if
   else if reqType = "checkRegistration"
     result = checkRegistration()
   else if reqType = "loadCurrentScene"
@@ -35,20 +41,18 @@ function requestServerPairingCode() as Object
   request.SetRequest("POST")
   request.AddHeader("Content-Type", "application/json")
   body = request.GetToString()
-  status = request.GetResponseCode()
-
-  if status >= 200 and status < 300
+  if body <> invalid and body <> ""
     parsed = ParseJson(body)
     if parsed <> invalid and parsed.code <> invalid
       code = parsed.code
       if type(code) = "roString" or type(code) = "String"
-        return { ok: true, requestType: "requestServerPairingCode", status: status, failureReason: "", json: { code: code } }
+        return { ok: true, requestType: "requestServerPairingCode", status: 200, failureReason: "", json: { code: code } }
       end if
     end if
   end if
 
   fallback = generatePairingCode()
-  return { ok: true, requestType: "requestServerPairingCode", status: status, failureReason: "Using local fallback code", json: { code: fallback } }
+  return { ok: true, requestType: "requestServerPairingCode", status: 0, failureReason: "Using local fallback code", json: { code: fallback } }
 end function
 
 function checkRegistration() as Object
@@ -60,7 +64,31 @@ end function
 function loadCurrentScene() as Object
   segment = m.top.displaySegment
   endpoint = joinApiUrl("/api/displays/" + segment + "/current-scene")
-  return httpGet(endpoint, "loadCurrentScene")
+  result = httpGet(endpoint, "loadCurrentScene")
+  if result.ok <> true or result.json = invalid or result.json.scene = invalid then
+    return result
+  end if
+
+  scene = result.json.scene
+  if scene.backgroundUrl <> invalid and (type(scene.backgroundUrl) = "roString" or type(scene.backgroundUrl) = "String") then
+    mediaUrl = normalizeMediaUrl(scene.backgroundUrl)
+    if mediaUrl <> ""
+      print "Downloading image: "; mediaUrl
+      if canDownloadImage(mediaUrl) then
+        scene.backgroundUrl = mediaUrl
+      else
+        return {
+          ok: false
+          requestType: "loadCurrentScene"
+          status: 0
+          failureReason: "Image download failed"
+          json: invalid
+        }
+      end if
+    end if
+  end if
+
+  return result
 end function
 
 function httpGet(url as String, requestType as String) as Object
@@ -69,23 +97,22 @@ function httpGet(url as String, requestType as String) as Object
   request.InitClientCertificates()
   request.SetUrl(url)
   body = request.GetToString()
-  status = request.GetResponseCode()
-
-  if status < 200 or status >= 300
-    return { ok: false, requestType: requestType, status: status, failureReason: "HTTP error", json: invalid }
+  if body = invalid or body = ""
+    return { ok: false, requestType: requestType, status: 0, failureReason: "Empty response", json: invalid }
   end if
 
   parsed = ParseJson(body)
   if parsed = invalid
-    return { ok: false, requestType: requestType, status: status, failureReason: "Invalid JSON response", json: invalid }
+    return { ok: false, requestType: requestType, status: 0, failureReason: "Invalid JSON response", json: invalid }
   end if
 
-  return { ok: true, requestType: requestType, status: status, failureReason: "", json: parsed }
+  return { ok: true, requestType: requestType, status: 200, failureReason: "", json: parsed }
 end function
 
 function joinApiUrl(path as String) as String
   base = m.top.baseUrl
   if base = invalid or base = "" then base = "https://lockers.bvillebiga.com"
+  base = base.Trim()
   while base.Right(1) = "/"
     base = base.Left(Len(base) - 1)
   end while
@@ -93,6 +120,23 @@ function joinApiUrl(path as String) as String
   p = path
   if p.Left(1) <> "/" then p = "/" + p
   return base + p
+end function
+
+function normalizeMediaUrl(rawUrl as String) as String
+  value = rawUrl.Trim()
+  if value = "" then return ""
+  if value.Left(8) = "https://" or value.Left(7) = "http://" then return value
+  if value.Left(1) = "/" then return joinApiUrl(value)
+  return joinApiUrl("/" + value)
+end function
+
+function canDownloadImage(url as String) as Boolean
+  request = CreateObject("roUrlTransfer")
+  request.SetCertificatesFile("common:/certs/ca-bundle.crt")
+  request.InitClientCertificates()
+  request.SetUrl(url)
+  body = request.GetToString()
+  return body <> invalid and body <> ""
 end function
 
 function generatePairingCode() as String

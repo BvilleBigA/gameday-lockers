@@ -36,6 +36,7 @@ function DisplaysContent() {
   const [regBusy, setRegBusy] = useState(false);
   const [regMsg, setRegMsg] = useState<string | null>(null);
   const [regDetail, setRegDetail] = useState<string | null>(null);
+  const [showAddScreensModal, setShowAddScreensModal] = useState(false);
 
   const load = useCallback(async () => {
     const [dRes, gRes] = await Promise.all([
@@ -59,6 +60,7 @@ function DisplaysContent() {
     const n = normalizePairingCode(q);
     if (n) {
       setCodesText((prev) => (prev.trim() ? prev : n));
+      setShowAddScreensModal(true);
     }
   }, [searchParams]);
 
@@ -106,6 +108,7 @@ function DisplaysContent() {
     }
     setCodesText("");
     load();
+    setShowAddScreensModal(false);
     window.setTimeout(() => {
       setRegMsg(null);
       setRegDetail(null);
@@ -152,105 +155,125 @@ function DisplaysContent() {
           </Link>
           .
         </p>
+        <div className="mt-6">
+          <button
+            type="button"
+            onClick={() => setShowAddScreensModal(true)}
+            className="rounded-xl bg-[#52A88E] px-7 py-3 text-sm font-bold uppercase tracking-wide text-white shadow-md shadow-[#52A88E]/25 transition hover:bg-[#469178]"
+          >
+            Add screens
+          </button>
+        </div>
       </div>
 
-      <section className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-md shadow-slate-900/[0.06] ring-1 ring-black/[0.03]">
-        <AdminBrandRibbon
-          title="Add screens"
-          description="Paste one or more pairing codes from /screen, choose the group and naming, then register."
-        />
-        <div className="px-5 py-6 sm:px-7 sm:py-8">
-          <form onSubmit={addScreens} className="space-y-6">
-            <div>
-              <label htmlFor="reg-codes" className="text-sm font-medium text-slate-700">
-                Registration codes
-              </label>
-              <textarea
-                id="reg-codes"
-                value={codesText}
-                onChange={(e) => setCodesText(e.target.value)}
-                spellCheck={false}
-                className="mt-2 min-h-[132px] w-full rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3 font-mono text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#52A88E] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#52A88E]/20"
-                placeholder="A2J4-F5E1"
-              />
-              <p className="mt-2 text-xs text-slate-500">
-                Separate codes with spaces, commas, or new lines.
-              </p>
-            </div>
+      {showAddScreensModal ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/55 p-4">
+          <div className="max-h-[90vh] w-full max-w-4xl overflow-auto rounded-2xl border border-slate-200/90 bg-white shadow-2xl ring-1 ring-black/[0.05]">
+            <AdminBrandRibbon
+              title="Add screens"
+              description="Paste one or more pairing codes from /screen, choose the group and naming, then register."
+            />
+            <div className="px-5 py-6 sm:px-7 sm:py-8">
+              <form onSubmit={addScreens} className="space-y-6">
+                <div>
+                  <label htmlFor="reg-codes" className="text-sm font-medium text-slate-700">
+                    Registration codes
+                  </label>
+                  <textarea
+                    id="reg-codes"
+                    value={codesText}
+                    onChange={(e) => setCodesText(e.target.value)}
+                    spellCheck={false}
+                    className="mt-2 min-h-[132px] w-full rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3 font-mono text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#52A88E] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#52A88E]/20"
+                    placeholder="A2J4-F5E1"
+                  />
+                  <p className="mt-2 text-xs text-slate-500">
+                    Separate codes with spaces, commas, or new lines.
+                  </p>
+                </div>
 
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-5">
-              <SelectMenu
-                label="Group"
-                value={regGroupId}
-                onChange={setRegGroupId}
-                options={groupOptions}
-                hint="Wall assignment for every code in this batch."
-              />
-              <div className="grid gap-2">
-                <label htmlFor="name-prefix" className="text-sm font-medium text-slate-700">
-                  Name prefix
-                </label>
-                <input
-                  id="name-prefix"
-                  value={namePrefix}
-                  onChange={(e) => setNamePrefix(e.target.value)}
-                  className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3.5 text-sm text-slate-900 shadow-sm outline-none transition focus:border-[#52A88E] focus:ring-2 focus:ring-[#52A88E]/20"
-                  placeholder="Screen"
-                />
-              </div>
-              <div className="grid gap-2">
-                <label htmlFor="start-num" className="text-sm font-medium text-slate-700">
-                  Start number
-                </label>
-                <input
-                  id="start-num"
-                  type="number"
-                  min={1}
-                  value={startNumber}
-                  onChange={(e) => setStartNumber(Number(e.target.value) || 1)}
-                  className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3.5 text-sm text-slate-900 shadow-sm outline-none transition focus:border-[#52A88E] focus:ring-2 focus:ring-[#52A88E]/20"
-                />
-              </div>
-            </div>
+                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-5">
+                  <SelectMenu
+                    label="Group"
+                    value={regGroupId}
+                    onChange={setRegGroupId}
+                    options={groupOptions}
+                    hint="Wall assignment for every code in this batch."
+                  />
+                  <div className="grid gap-2">
+                    <label htmlFor="name-prefix" className="text-sm font-medium text-slate-700">
+                      Name prefix
+                    </label>
+                    <input
+                      id="name-prefix"
+                      value={namePrefix}
+                      onChange={(e) => setNamePrefix(e.target.value)}
+                      className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3.5 text-sm text-slate-900 shadow-sm outline-none transition focus:border-[#52A88E] focus:ring-2 focus:ring-[#52A88E]/20"
+                      placeholder="Screen"
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <label htmlFor="start-num" className="text-sm font-medium text-slate-700">
+                      Start number
+                    </label>
+                    <input
+                      id="start-num"
+                      type="number"
+                      min={1}
+                      value={startNumber}
+                      onChange={(e) => setStartNumber(Number(e.target.value) || 1)}
+                      className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3.5 text-sm text-slate-900 shadow-sm outline-none transition focus:border-[#52A88E] focus:ring-2 focus:ring-[#52A88E]/20"
+                    />
+                  </div>
+                </div>
 
-            {regMsg ? (
-              <div
-                role="status"
-                className={`rounded-xl border px-4 py-3 text-sm font-medium ${
-                  regDetail
-                    ? "border-amber-200 bg-amber-50 text-amber-900"
-                    : "border-[#52A88E]/30 bg-[#f0faf7] text-[#2d6b5a]"
-                }`}
-              >
-                {regMsg}
-              </div>
-            ) : null}
-            {regDetail ? (
-              <pre className="max-h-36 overflow-auto whitespace-pre-wrap rounded-xl border border-slate-200 bg-slate-50 p-4 font-mono text-xs text-slate-600">
-                {regDetail}
-              </pre>
-            ) : null}
+                {regMsg ? (
+                  <div
+                    role="status"
+                    className={`rounded-xl border px-4 py-3 text-sm font-medium ${
+                      regDetail
+                        ? "border-amber-200 bg-amber-50 text-amber-900"
+                        : "border-[#52A88E]/30 bg-[#f0faf7] text-[#2d6b5a]"
+                    }`}
+                  >
+                    {regMsg}
+                  </div>
+                ) : null}
+                {regDetail ? (
+                  <pre className="max-h-36 overflow-auto whitespace-pre-wrap rounded-xl border border-slate-200 bg-slate-50 p-4 font-mono text-xs text-slate-600">
+                    {regDetail}
+                  </pre>
+                ) : null}
 
-            <div className="flex flex-wrap items-center gap-3 pt-1">
-              <button
-                type="submit"
-                disabled={regBusy}
-                className="rounded-xl bg-[#52A88E] px-7 py-3 text-sm font-bold uppercase tracking-wide text-white shadow-md shadow-[#52A88E]/25 transition hover:bg-[#469178] disabled:opacity-50"
-              >
-                {regBusy ? "Adding…" : "Add screens"}
-              </button>
-              <Link
-                href="/screen"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50"
-              >
-                Open /screen on a TV
-              </Link>
+                <div className="flex flex-wrap items-center gap-3 pt-1">
+                  <button
+                    type="submit"
+                    disabled={regBusy}
+                    className="rounded-xl bg-[#52A88E] px-7 py-3 text-sm font-bold uppercase tracking-wide text-white shadow-md shadow-[#52A88E]/25 transition hover:bg-[#469178] disabled:opacity-50"
+                  >
+                    {regBusy ? "Adding…" : "Add screens"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowAddScreensModal(false)}
+                    className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50"
+                  >
+                    Cancel
+                  </button>
+                  <Link
+                    href="/screen"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50"
+                  >
+                    Open /screen on a TV
+                  </Link>
+                </div>
+              </form>
             </div>
-          </form>
+          </div>
         </div>
-      </section>
+      ) : null}
 
       <div>
         <h2 className="font-gdl-display text-lg font-bold uppercase tracking-wide text-slate-800">

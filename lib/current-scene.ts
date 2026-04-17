@@ -2,6 +2,29 @@ import type { Scene } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { parseSceneLayout, type SceneLayoutState } from "@/lib/scene-layout";
 
+const DEFAULT_MEDIA_BASE_URL = "https://lockers.bvillebiga.com";
+
+function normalizeMediaBaseUrl(): string {
+  const raw =
+    process.env.APP_BASE_URL ||
+    process.env.NEXT_PUBLIC_ADMIN_URL ||
+    DEFAULT_MEDIA_BASE_URL;
+  const trimmed = raw.trim();
+  if (!trimmed) return DEFAULT_MEDIA_BASE_URL;
+  const withProtocol = /^https?:\/\//i.test(trimmed)
+    ? trimmed
+    : `https://${trimmed}`;
+  return withProtocol.replace(/\/+$/, "");
+}
+
+function toAbsoluteMediaUrl(input: string): string {
+  const value = input.trim();
+  if (!value) return value;
+  if (/^https?:\/\//i.test(value)) return value;
+  const path = value.startsWith("/") ? value : `/${value}`;
+  return `${normalizeMediaBaseUrl()}${path}`;
+}
+
 export type LiveSceneDto = {
   id: number;
   name: string;
@@ -30,7 +53,7 @@ function sceneToDto(s: Scene): LiveSceneDto {
   return {
     id: s.id,
     name: s.name,
-    backgroundUrl: s.backgroundUrl,
+    backgroundUrl: toAbsoluteMediaUrl(s.backgroundUrl),
     themeColor: s.themeColor,
     mediaKind: s.mediaKind || "URL",
     layout: parseSceneLayout(s.layoutJson ?? "{}", s.name),
@@ -47,7 +70,7 @@ function directMediaToDto(display: {
   return {
     id: 0,
     name: "Direct media",
-    backgroundUrl: display.directMediaUrl.trim(),
+    backgroundUrl: toAbsoluteMediaUrl(display.directMediaUrl),
     themeColor,
     mediaKind,
     layout: parseSceneLayout("{}", "Direct"),

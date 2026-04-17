@@ -3,7 +3,7 @@
   <interface>
     <field id="baseUrl" type="string" />
     <field id="requestType" type="string" />
-    <field id="pairingCode" type="string" />
+    <field id="pairingCode" type="string" alwaysNotify="true" />
     <field id="displaySegment" type="string" />
     <field id="result" type="assocarray" alwaysNotify="true" />
     <field id="resultVersion" type="integer" />

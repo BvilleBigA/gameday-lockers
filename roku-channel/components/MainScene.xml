@@ -122,6 +122,8 @@
       id="fxTimer"
       duration="0.5"
       repeat="true" />
+
+    <PairingTask id="pairingTask" />
   </children>
   <script type="text/brightscript" uri="pkg:/components/MainScene.brs" />
 </component>

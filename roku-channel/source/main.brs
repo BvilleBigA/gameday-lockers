@@ -5,7 +5,7 @@ sub Main()
   screen.SetMessagePort(port)
 
   scene = screen.CreateScene("MainScene")
-  globalNode = screen.GetGlobalNode()
+  globalNode = screen.getGlobalNode()
   if globalNode <> invalid then
     globalNode.addFields({
       baseUrl: "https://lockers.bvillebiga.com"
