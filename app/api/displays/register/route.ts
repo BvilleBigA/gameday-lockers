@@ -89,24 +89,36 @@ export async function POST(req: Request) {
 
   for (const pairingCode of normalized) {
     const existing = await prisma.display.findUnique({ where: { pairingCode } });
-    if (existing) {
+    if (existing?.isPaired) {
       errors.push({ code: pairingCode, error: "Already registered" });
       continue;
     }
 
     try {
       const label = `${namePrefix}-${nextNum}`;
-      const display = await prisma.display.create({
-        data: {
-          pairingCode,
-          label,
-          isPaired: true,
-          teamId,
-          groupId,
-          playerId: null,
-          overrideSceneId: null,
-        },
-      });
+      const display = existing
+        ? await prisma.display.update({
+            where: { id: existing.id },
+            data: {
+              label,
+              isPaired: true,
+              teamId,
+              groupId,
+              playerId: null,
+              overrideSceneId: null,
+            },
+          })
+        : await prisma.display.create({
+            data: {
+              pairingCode,
+              label,
+              isPaired: true,
+              teamId,
+              groupId,
+              playerId: null,
+              overrideSceneId: null,
+            },
+          });
       nextNum += 1;
       created.push({ code: pairingCode, displayId: display.id, label });
     } catch {

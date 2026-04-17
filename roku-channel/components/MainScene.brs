@@ -34,13 +34,18 @@ sub init()
   m.pollTimer.observeField("fire", "onPollTimer")
   m.fxTimer.observeField("fire", "onFxTimer")
 
+  renderPreparingState()
+
   savedCode = loadPairingCode()
   m.displayId = loadDisplayId()
   m.isPaired = loadIsPaired() and m.displayId > 0
   if isValidPairingCode(savedCode) and savedCode <> "XXXX-XXXX"
     m.pairingCode = savedCode
   else
-    m.pairingCode = generatePairingCode()
+    m.pairingCode = requestServerPairingCode()
+    if not isValidPairingCode(m.pairingCode) then
+      m.pairingCode = generatePairingCode()
+    end if
     savePairingCode(m.pairingCode)
   end if
 
@@ -48,7 +53,7 @@ sub init()
     m.currentMode = "live"
     renderLiveLoadingState()
   else
-    renderPairingState("Waiting for registration...")
+    renderPairingState("Add this code in admin - nothing is saved until you register")
   end if
   m.pollTimer.control = "start"
   m.fxTimer.control = "start"
@@ -112,7 +117,7 @@ sub checkDisplayRegistration()
     m.isPaired = false
     m.displayId = 0
     saveDisplayState(0, false)
-    renderPairingState("Waiting for registration...")
+    renderPairingState("Add this code in admin - nothing is saved until you register")
   end if
 end sub
 
@@ -134,7 +139,10 @@ sub loadCurrentScene()
     m.isPaired = false
     m.displayId = 0
     saveDisplayState(0, false)
-    m.pairingCode = generatePairingCode()
+    m.pairingCode = requestServerPairingCode()
+    if not isValidPairingCode(m.pairingCode) then
+      m.pairingCode = generatePairingCode()
+    end if
     savePairingCode(m.pairingCode)
     renderPairingState("This screen was removed. Register this new code.")
     return
@@ -236,6 +244,27 @@ function joinApiUrl(path as String) as String
   return m.baseUrl + p
 end function
 
+function requestServerPairingCode() as String
+  endpoint = joinApiUrl("/api/displays/request-code")
+  request = CreateObject("roUrlTransfer")
+  request.SetCertificatesFile("common:/certs/ca-bundle.crt")
+  request.InitClientCertificates()
+  request.SetUrl(endpoint)
+  request.SetRequest("POST")
+  request.AddHeader("Content-Type", "application/json")
+
+  responseText = request.GetToString()
+  status = request.GetResponseCode()
+  if status < 200 or status >= 300 then
+    return ""
+  end if
+  json = ParseJson(responseText)
+  if json = invalid or json.code = invalid then return ""
+  code = json.code
+  if type(code) <> "roString" and type(code) <> "String" then return ""
+  return code
+end function
+
 sub renderPairingState(statusText as String)
   m.overlay.visible = true
   m.panelShadow.visible = true
@@ -253,7 +282,7 @@ sub renderPairingState(statusText as String)
   m.subtitleLabel.text = "ELEVATE THE LOCKER ROOM"
   m.statusLabel.text = statusText
   m.codeLabel.text = m.pairingCode
-  m.helpLabel.text = "Admin > Displays > Add screens at lockers.bvillebiga.com"
+  m.helpLabel.text = "Admin -> Displays -> Add screens (lockers.bvillebiga.com)"
 end sub
 
 sub renderLiveLoadingState()
@@ -271,7 +300,7 @@ sub renderLiveLoadingState()
 
   m.titleLabel.text = "GAMEDAY LOCKERS"
   m.subtitleLabel.text = "SCREEN CONNECTED"
-  m.statusLabel.text = "Registered. Loading scene..."
+  m.statusLabel.text = "Preparing"
   m.codeLabel.text = m.pairingCode
   m.helpLabel.text = "Connected to lockers.bvillebiga.com"
 end sub
@@ -294,6 +323,24 @@ sub renderLiveErrorState(statusText as String)
   m.statusLabel.text = statusText
   m.codeLabel.text = m.pairingCode
   m.helpLabel.text = "Retrying automatically..."
+end sub
+
+sub renderPreparingState()
+  m.overlay.visible = true
+  m.panelShadow.visible = true
+  m.panelFrame.visible = true
+  m.panel.visible = true
+  m.panelInnerBorder.visible = true
+  m.goldRule.visible = true
+  m.titleLabel.visible = true
+  m.subtitleLabel.visible = true
+  m.statusLabel.visible = true
+  m.codeLabel.visible = false
+  m.helpLabel.visible = false
+
+  m.titleLabel.text = "GAMEDAY LOCKERS"
+  m.subtitleLabel.text = "ELEVATE THE LOCKER ROOM"
+  m.statusLabel.text = "Preparing"
 end sub
 
 function generatePairingCode() as String
