@@ -1,5 +1,8 @@
 sub init()
   m.baseUrl = "https://lockers.bvillebiga.com"
+  if m.global <> invalid and m.global.baseUrl <> invalid and m.global.baseUrl <> "" then
+    m.baseUrl = m.global.baseUrl
+  end if
   if m.top.baseUrl <> invalid and m.top.baseUrl <> "" then
     m.baseUrl = m.top.baseUrl
   end if
@@ -331,7 +334,11 @@ function loadDisplayId() as Integer
   section = CreateObject("roRegistrySection", m.storageSection)
   if section.Exists(m.storageDisplayIdKey)
     raw = section.Read(m.storageDisplayIdKey)
-    return Val(raw)
+    if raw <> invalid and (type(raw) = "roString" or type(raw) = "String") then
+      if raw <> "" then
+        return Val(raw)
+      end if
+    end if
   end if
   return 0
 end function
@@ -339,7 +346,10 @@ end function
 function loadIsPaired() as Boolean
   section = CreateObject("roRegistrySection", m.storageSection)
   if section.Exists(m.storagePairedKey)
-    return section.Read(m.storagePairedKey) = "1"
+    raw = section.Read(m.storagePairedKey)
+    if raw <> invalid and (type(raw) = "roString" or type(raw) = "String") then
+      return raw = "1"
+    end if
   end if
   return false
 end function
