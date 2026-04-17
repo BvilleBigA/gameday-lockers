@@ -61,16 +61,15 @@ export async function resolveCurrentSceneForDisplay(
 ): Promise<ResolveDisplayStatus> {
   const display = await prisma.display.findUnique({
     where: { id: displayId },
-    include: { overrideScene: true },
+    include: { overrideScene: true, group: { select: { teamId: true } } },
   });
 
   if (!display) return "not_found";
 
-  if (!display.isPaired || display.teamId == null) {
+  const teamId = display.teamId ?? display.group?.teamId ?? null;
+  if (!display.isPaired || teamId == null) {
     return "not_registered";
   }
-
-  const teamId = display.teamId;
 
   const directUrl = display.directMediaUrl?.trim();
   if (directUrl) {

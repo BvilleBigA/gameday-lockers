@@ -13,10 +13,11 @@ export async function GET(req: Request) {
 
   const display = await prisma.display.findUnique({
     where: { pairingCode: code },
-    select: { id: true, isPaired: true, teamId: true },
+    select: { id: true, isPaired: true, teamId: true, group: { select: { teamId: true } } },
   });
 
-  if (!display || !display.isPaired || display.teamId == null) {
+  const effectiveTeamId = display?.teamId ?? display?.group?.teamId ?? null;
+  if (!display || !display.isPaired || effectiveTeamId == null) {
     return NextResponse.json({ registered: false });
   }
 
