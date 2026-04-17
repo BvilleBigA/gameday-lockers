@@ -29,7 +29,14 @@ function NavLink({
 
 export function AdminSidebar() {
   const { data: session } = useSession();
-  const signOutUrl = typeof window === "undefined" ? "/" : `${window.location.origin}/`;
+
+  async function handleSignOut() {
+    await signOut({ redirect: false });
+    if (typeof window !== "undefined") {
+      window.location.assign("/");
+    }
+  }
+
   const isAdmin = session?.user?.role === "ADMIN";
   const memberships = session?.user?.orgMemberships ?? [];
   const canEditContent =
@@ -118,7 +125,7 @@ export function AdminSidebar() {
         ) : null}
         <button
           type="button"
-          onClick={() => void signOut({ callbackUrl: signOutUrl })}
+          onClick={() => void handleSignOut()}
           className="block w-full rounded-md border border-white/15 py-2 text-center text-xs font-semibold uppercase tracking-wider text-slate-300 hover:bg-white/5"
         >
           Sign out

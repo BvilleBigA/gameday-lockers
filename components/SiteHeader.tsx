@@ -5,7 +5,13 @@ import { useSession, signOut } from "next-auth/react";
 
 export function SiteHeader() {
   const { data: session, status } = useSession();
-  const signOutUrl = typeof window === "undefined" ? "/" : `${window.location.origin}/`;
+
+  async function handleSignOut() {
+    await signOut({ redirect: false });
+    if (typeof window !== "undefined") {
+      window.location.assign("/");
+    }
+  }
 
   return (
     <header className="border-b border-slate-200/80 bg-white/95 backdrop-blur-sm">
@@ -26,7 +32,7 @@ export function SiteHeader() {
               </Link>
               <button
                 type="button"
-                onClick={() => void signOut({ callbackUrl: signOutUrl })}
+                onClick={() => void handleSignOut()}
                 className="rounded-md border border-slate-200 px-3 py-1.5 font-medium text-slate-700 hover:bg-slate-50"
               >
                 Sign out
