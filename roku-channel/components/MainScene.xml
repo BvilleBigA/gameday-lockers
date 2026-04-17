@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="MainScene" extends="Scene">
+  <children>
+    <Poster
+      id="bgPoster"
+      width="1920"
+      height="1080"
+      translation="[0,0]"
+      loadDisplayMode="scaleToFill" />
+
+    <Rectangle
+      id="overlay"
+      width="1920"
+      height="1080"
+      color="0x000000AA"
+      visible="true" />
+
+    <Label
+      id="titleLabel"
+      translation="[120,120]"
+      width="1680"
+      horizAlign="left"
+      text="Gameday Lockers"
+      color="0xFFFFFFFF" />
+
+    <Label
+      id="statusLabel"
+      translation="[120,220]"
+      width="1680"
+      horizAlign="left"
+      text="Loading..."
+      color="0xEAEAEAFF" />
+
+    <Label
+      id="codeLabel"
+      translation="[120,320]"
+      width="1680"
+      horizAlign="left"
+      text=""
+      color="0xF9D670FF" />
+
+    <Label
+      id="helpLabel"
+      translation="[120,420]"
+      width="1680"
+      horizAlign="left"
+      text=""
+      color="0xCFCFCFFF" />
+
+    <Timer
+      id="pollTimer"
+      duration="3"
+      repeat="true" />
+  </children>
+  <script type="text/brightscript" uri="pkg:/components/MainScene.brs" />
+</component>

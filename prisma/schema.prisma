@@ -1,0 +1,249 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id String   @id @default(cuid())
+  email         String   @unique
+  name          String?
+  passwordHash  String
+  /** Platform: ADMIN = full access; USER = normal accounts (org roles live on OrganizationMember). */
+  role          String   @default("USER")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  organizationMembers   OrganizationMember[]
+  invitesCreated        OrganizationInvite[] @relation("InviteCreatedBy")
+  favoriteScenes        UserFavoriteScene[]
+  favoriteWallSnapshots UserFavoriteWallSnapshot[]
+
+  @@index([role])
+}
+
+model Organization {
+  id        Int                    @id @default(autoincrement())
+  name      String
+  createdAt DateTime               @default(now())
+  updatedAt DateTime               @updatedAt
+  teams     Team[]
+  members   OrganizationMember[]
+  invites   OrganizationInvite[]
+}
+
+/** Per-org role: OWNER (billing + invites), COACH (content + control), MANAGER (control only). */
+model OrganizationMember {
+  id             Int @id @default(autoincrement())
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organizationId Int
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  role           String
+  createdAt      DateTime     @default(now())
+
+  @@unique([userId, organizationId])
+  @@index([organizationId])
+}
+
+model OrganizationInvite {
+  id              String       @id @default(cuid())
+  organizationId  Int
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  email           String
+  /** OWNER | COACH | MANAGER */
+  role            String
+  token           String       @unique
+  expiresAt       DateTime
+  createdAt       DateTime     @default(now())
+  createdByUserId String
+  createdBy       User         @relation("InviteCreatedBy", fields: [createdByUserId], references: [id], onDelete: Cascade)
+  usedAt          DateTime?
+
+  @@index([organizationId])
+  @@index([email])
+}
+
+model Team {
+  id                 Int                 @id @default(autoincrement())
+  name               String
+  organizationId     Int
+  organization       Organization        @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  groups             Group[]
+  players            Player[]
+  scenes             Scene[]
+  displays           Display[]
+  wallSceneSnapshots WallSceneSnapshot[]
+
+  @@index([organizationId])
+}
+
+model Group {
+  id                 Int                 @id @default(autoincrement())
+  name               String
+  teamId             Int
+  team               Team                @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  players            Player[]
+  displays           Display[]
+  contentFolder      ContentFolder?
+  wallSceneSnapshots WallSceneSnapshot[]
+
+  @@index([teamId])
+}
+
+model Player {
+  id        Int       @id @default(autoincrement())
+  firstName String
+  lastName  String
+  number    String
+  position  String
+  imageUrl  String?
+  teamId    Int
+  groupId   Int
+  team      Team      @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  group     Group     @relation(fields: [groupId], references: [id], onDelete: Restrict)
+  displays  Display[]
+
+  @@index([teamId])
+  @@index([groupId])
+}
+
+model Scene {
+  id            Int       @id @default(autoincrement())
+  name          String
+  teamId        Int?
+  team          Team?     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  backgroundUrl String
+  mediaKind     String    @default("URL")
+  themeColor    String
+  /** JSON: Boxout-style template + positioned text layers (see lib/scene-layout.ts) */
+  layoutJson    String    @default("{}")
+  schedules     Schedule[]
+  displayOverrides Display[] @relation("DisplayOverride")
+  favoritedBy   UserFavoriteScene[]
+
+  @@index([teamId])
+}
+
+/** Live control: user-starred team graphic scenes (go live from Favorites). */
+model UserFavoriteScene {
+  userId  String
+  sceneId Int
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scene   Scene  @relation(fields: [sceneId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([userId, sceneId])
+  @@index([userId])
+}
+
+/** Live control: user-starred saved wall layouts. */
+model UserFavoriteWallSnapshot {
+  userId     String
+  snapshotId Int
+  user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  snapshot   WallSceneSnapshot @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@id([userId, snapshotId])
+  @@index([userId])
+}
+
+model Schedule {
+  id         Int      @id @default(autoincrement())
+  sceneId    Int
+  scene      Scene    @relation(fields: [sceneId], references: [id], onDelete: Cascade)
+  targetType String
+  targetId   Int
+  startTime  DateTime
+  endTime    DateTime
+
+  @@index([targetType, targetId])
+  @@index([startTime, endTime])
+}
+
+model Display {
+  id              Int     @id @default(autoincrement())
+  pairingCode     String  @unique
+  label           String?
+  isPaired        Boolean @default(false)
+  teamId          Int?
+  team            Team?   @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  groupId         Int?
+  group           Group?  @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  overrideSceneId Int?
+  overrideScene   Scene?  @relation("DisplayOverride", fields: [overrideSceneId], references: [id], onDelete: SetNull)
+  /** Per-screen media without a Scene row; wins over overrideScene when set. */
+  directMediaUrl    String?
+  directMediaKind   String?
+  directThemeColor  String?
+  playerId        Int?
+  player          Player? @relation(fields: [playerId], references: [id], onDelete: SetNull)
+  wallCaptures    WallSceneDisplayCapture[]
+
+  @@index([teamId])
+  @@index([groupId])
+  @@index([overrideSceneId])
+}
+
+/** Named wall preset: per-display overrides/direct media captured from the group wall. */
+model WallSceneSnapshot {
+  id        Int                       @id @default(autoincrement())
+  name      String
+  groupId   Int
+  group     Group                     @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  teamId    Int
+  team      Team                      @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  captures  WallSceneDisplayCapture[]
+  favoritedBy UserFavoriteWallSnapshot[]
+  createdAt DateTime                  @default(now())
+
+  @@index([groupId])
+  @@index([teamId])
+}
+
+model WallSceneDisplayCapture {
+  id                Int               @id @default(autoincrement())
+  snapshotId        Int
+  snapshot          WallSceneSnapshot @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
+  displayId         Int
+  display           Display           @relation(fields: [displayId], references: [id], onDelete: Cascade)
+  overrideSceneId   Int?
+  directMediaUrl    String?
+  directMediaKind   String?
+  directThemeColor  String?
+
+  @@unique([snapshotId, displayId])
+  @@index([displayId])
+}
+
+model ContentFolder {
+  id        Int             @id @default(autoincrement())
+  name      String
+  parentId  Int?
+  parent    ContentFolder?  @relation("ContentFolderTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children  ContentFolder[] @relation("ContentFolderTree")
+  assets    ContentAsset[]
+  /** One library folder per screen group (auto-created with the group). */
+  groupId   Int?            @unique
+  group     Group?          @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  createdAt DateTime        @default(now())
+
+  @@index([parentId])
+  @@index([groupId])
+}
+
+model ContentAsset {
+  id        Int            @id @default(autoincrement())
+  name      String
+  url       String
+  mediaKind String         @default("IMAGE")
+  folderId  Int?
+  folder    ContentFolder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  createdAt DateTime       @default(now())
+
+  @@index([folderId])
+}

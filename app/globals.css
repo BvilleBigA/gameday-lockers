@@ -1,0 +1,122 @@
+@import "tailwindcss";
+
+/* Gameday Lockers — premium locker-room nameplate — deep charcoal + metallic gold */
+:root {
+  --gdl-deep: #060607;
+  --gdl-panel: #0e0e10;
+  --gdl-elevated: #161618;
+  --gdl-border: #2a2826;
+  --gdl-gold: #c4a052;
+  --gdl-gold-mid: #e3c76d;
+  --gdl-gold-dim: #7d6a3a;
+  --gdl-chrome: #b8babf;
+  --gdl-text: #f2f0ec;
+  --gdl-muted: #8a8884;
+  /* Product accent */
+  --gdl-teal: #52a88e;
+  --gdl-teal-hover: #469178;
+  --gdl-teal-soft: #7dccb4;
+  --background: #e8e6e1;
+  --foreground: #0a0a0b;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --color-gdl-deep: var(--gdl-deep);
+  --color-gdl-panel: var(--gdl-panel);
+  --color-gdl-gold: var(--gdl-gold);
+  --color-gdl-gold-mid: var(--gdl-gold-mid);
+  --color-gdl-muted: var(--gdl-muted);
+}
+
+html {
+  min-height: 100dvh;
+  width: 100%;
+}
+
+body {
+  min-height: 100dvh;
+  width: 100%;
+  background: var(--background);
+  color: var(--foreground);
+}
+
+/* Full-screen digital nameplate / TV */
+.gdl-screen-root {
+  background: radial-gradient(ellipse 100% 70% at 50% -10%, #1c1a17 0%, var(--gdl-deep) 45%, #020203 100%);
+}
+
+.gdl-vignette {
+  background: radial-gradient(ellipse 85% 65% at 50% 45%, transparent 0%, rgba(0, 0, 0, 0.4) 55%, rgba(0, 0, 0, 0.92) 100%);
+}
+
+.gdl-gold-gradient-text {
+  background: linear-gradient(
+    180deg,
+    var(--gdl-gold-mid) 0%,
+    var(--gdl-gold) 45%,
+    var(--gdl-gold-dim) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.gdl-gold-rule {
+  height: 3px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--gdl-gold-dim) 15%,
+    var(--gdl-gold-mid) 50%,
+    var(--gdl-gold-dim) 85%,
+    transparent 100%
+  );
+  box-shadow: 0 0 20px rgba(196, 160, 82, 0.35);
+}
+
+.gdl-nameplate-outer {
+  box-shadow:
+    0 0 0 1px rgba(196, 160, 82, 0.25),
+    0 0 0 4px rgba(10, 10, 12, 0.95),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 25px 80px rgba(0, 0, 0, 0.75);
+}
+
+.gdl-corner-accent {
+  background: linear-gradient(135deg, var(--gdl-gold-dim), var(--gdl-gold-mid));
+  opacity: 0.9;
+}
+
+.font-gdl-display {
+  font-family: var(--font-oswald), "Oswald", system-ui, sans-serif;
+}
+
+/* Admin content area — warm neutral (product guide brochure feel) */
+.gdl-admin-surface {
+  background: linear-gradient(180deg, #ebe9e4 0%, #e3e1dc 100%);
+}
+
+@keyframes fadeinright {
+  from {
+    opacity: 0.35;
+    transform: translateX(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes fadeinleft {
+  from {
+    opacity: 0.35;
+    transform: translateX(-14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
