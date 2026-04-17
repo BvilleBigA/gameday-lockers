@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <component name="MainScene" extends="Scene">
+  <interface>
+    <field id="baseUrl" type="string" />
+  </interface>
   <children>
     <Rectangle
       id="baseBg"

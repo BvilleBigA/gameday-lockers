@@ -1,9 +1,16 @@
 sub init()
   m.baseUrl = "https://lockers.bvillebiga.com"
+  if m.top.baseUrl <> invalid and m.top.baseUrl <> "" then
+    m.baseUrl = m.top.baseUrl
+  end if
   m.storageSection = "gameday_lockers"
-  m.storageKey = "pairing_code"
+  m.storagePairingCodeKey = "pairing_code"
+  m.storageDisplayIdKey = "display_id"
+  m.storagePairedKey = "is_paired"
   m.currentMode = "pairing"
   m.fxTick = 0
+  m.displayId = 0
+  m.isPaired = false
 
   m.bgPoster = m.top.findNode("bgPoster")
   m.overlay = m.top.findNode("overlay")
@@ -24,6 +31,8 @@ sub init()
   m.fxTimer.observeField("fire", "onFxTimer")
 
   savedCode = loadPairingCode()
+  m.displayId = loadDisplayId()
+  m.isPaired = loadIsPaired() and m.displayId > 0
   if isValidPairingCode(savedCode)
     m.pairingCode = savedCode
   else
@@ -31,7 +40,12 @@ sub init()
     savePairingCode(m.pairingCode)
   end if
 
-  renderPairingState("Waiting for registration...")
+  if m.isPaired then
+    m.currentMode = "live"
+    renderLiveLoadingState()
+  else
+    renderPairingState("Waiting for registration...")
+  end if
   m.pollTimer.control = "start"
   m.fxTimer.control = "start"
 end sub
@@ -65,16 +79,34 @@ sub checkDisplayRegistration()
   if response = invalid then return
 
   if response.registered = true
+    if response.displayId <> invalid and type(response.displayId) = "roInt" then
+      m.displayId = response.displayId
+    else if response.displayId <> invalid and type(response.displayId) = "Integer" then
+      m.displayId = response.displayId
+    else
+      m.displayId = 0
+    end if
+    m.isPaired = m.displayId > 0
+    if m.isPaired then
+      saveDisplayState(m.displayId, true)
+    end if
     m.currentMode = "live"
     renderLiveLoadingState()
     loadCurrentScene()
   else
+    m.isPaired = false
+    m.displayId = 0
+    saveDisplayState(0, false)
     renderPairingState("Waiting for registration...")
   end if
 end sub
 
 sub loadCurrentScene()
-  endpoint = m.baseUrl + "/api/displays/" + m.pairingCode + "/current-scene"
+  segment = m.pairingCode
+  if m.isPaired and m.displayId > 0 then
+    segment = m.displayId.ToStr()
+  end if
+  endpoint = m.baseUrl + "/api/displays/" + segment + "/current-scene"
   transfer = CreateObject("roUrlTransfer")
   transfer.SetCertificatesFile("common:/certs/ca-bundle.crt")
   transfer.InitClientCertificates()
@@ -84,6 +116,9 @@ sub loadCurrentScene()
 
   if status = 404 or status = 409
     m.currentMode = "pairing"
+    m.isPaired = false
+    m.displayId = 0
+    saveDisplayState(0, false)
     m.pairingCode = generatePairingCode()
     savePairingCode(m.pairingCode)
     renderPairingState("This screen was removed. Register this new code.")
@@ -214,14 +249,42 @@ end function
 
 function loadPairingCode() as String
   section = CreateObject("roRegistrySection", m.storageSection)
-  if section.Exists(m.storageKey)
-    return section.Read(m.storageKey)
+  if section.Exists(m.storagePairingCodeKey)
+    return section.Read(m.storagePairingCodeKey)
   end if
   return ""
 end function
 
 sub savePairingCode(code as String)
   section = CreateObject("roRegistrySection", m.storageSection)
-  section.Write(m.storageKey, code)
+  section.Write(m.storagePairingCodeKey, code)
+  section.Flush()
+end sub
+
+function loadDisplayId() as Integer
+  section = CreateObject("roRegistrySection", m.storageSection)
+  if section.Exists(m.storageDisplayIdKey)
+    raw = section.Read(m.storageDisplayIdKey)
+    return Val(raw)
+  end if
+  return 0
+end function
+
+function loadIsPaired() as Boolean
+  section = CreateObject("roRegistrySection", m.storageSection)
+  if section.Exists(m.storagePairedKey)
+    return section.Read(m.storagePairedKey) = "1"
+  end if
+  return false
+end function
+
+sub saveDisplayState(displayId as Integer, isPaired as Boolean)
+  section = CreateObject("roRegistrySection", m.storageSection)
+  section.Write(m.storageDisplayIdKey, displayId.ToStr())
+  if isPaired then
+    section.Write(m.storagePairedKey, "1")
+  else
+    section.Write(m.storagePairedKey, "0")
+  end if
   section.Flush()
 end sub

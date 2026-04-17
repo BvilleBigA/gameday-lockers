@@ -4,6 +4,7 @@ sub Main()
   screen.SetMessagePort(port)
 
   scene = screen.CreateScene("MainScene")
+  scene.baseUrl = "https://lockers.bvillebiga.com"
   screen.Show()
 
   while true
