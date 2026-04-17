@@ -99,8 +99,8 @@
 
     <Label
       id="codeLabel"
-      translation="[250,500]"
-      width="1420"
+      translation="[200,500]"
+      width="1520"
       horizAlign="center"
       text=""
       color="0xE3C76DFF" />

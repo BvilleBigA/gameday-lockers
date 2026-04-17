@@ -1,6 +1,6 @@
 /** 8 alphanumeric chars as XXXX-XXXX (e.g. A2J4-F5E1). No DB row until admin registers. */
 
-const CHARSET = "ABCDEFGHJKLMNPQRSTUVWXYZ0123456789";
+const CHARSET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
 export function generatePairingCode(): string {
   const bytes = new Uint8Array(8);
