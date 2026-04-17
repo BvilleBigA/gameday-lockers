@@ -3,6 +3,7 @@ sub init()
   if m.top.baseUrl <> invalid and m.top.baseUrl <> "" then
     m.baseUrl = m.top.baseUrl
   end if
+  m.baseUrl = normalizeBaseUrl(m.baseUrl)
   m.storageSection = "gameday_lockers"
   m.storagePairingCodeKey = "pairing_code"
   m.storageDisplayIdKey = "display_id"
@@ -33,7 +34,7 @@ sub init()
   savedCode = loadPairingCode()
   m.displayId = loadDisplayId()
   m.isPaired = loadIsPaired() and m.displayId > 0
-  if isValidPairingCode(savedCode)
+  if isValidPairingCode(savedCode) and savedCode <> "XXXX-XXXX"
     m.pairingCode = savedCode
   else
     m.pairingCode = generatePairingCode()
@@ -74,9 +75,20 @@ sub pollServer()
 end sub
 
 sub checkDisplayRegistration()
-  endpoint = m.baseUrl + "/api/displays/check?code=" + m.pairingCode
-  response = httpGetJson(endpoint)
-  if response = invalid then return
+  endpoint = joinApiUrl("/api/displays/check?code=" + m.pairingCode)
+  result = httpGetJsonWithDiagnostics(endpoint)
+  if result = invalid or result.ok <> true
+    reason = "Network error"
+    if result <> invalid
+      if result.failureReason <> invalid and result.failureReason <> "" then
+        reason = result.failureReason
+      end if
+      reason = reason + " (HTTP " + result.status.ToStr() + ")"
+    end if
+    renderPairingState(reason)
+    return
+  end if
+  response = result.json
 
   if response.registered = true
     if response.displayId <> invalid and type(response.displayId) = "roInt" then
@@ -106,7 +118,7 @@ sub loadCurrentScene()
   if m.isPaired and m.displayId > 0 then
     segment = m.displayId.ToStr()
   end if
-  endpoint = m.baseUrl + "/api/displays/" + segment + "/current-scene"
+  endpoint = joinApiUrl("/api/displays/" + segment + "/current-scene")
   transfer = CreateObject("roUrlTransfer")
   transfer.SetCertificatesFile("common:/certs/ca-bundle.crt")
   transfer.InitClientCertificates()
@@ -165,6 +177,60 @@ function httpGetJson(url as String) as Dynamic
     return invalid
   end if
   return ParseJson(responseText)
+end function
+
+function httpGetJsonWithDiagnostics(url as String) as Object
+  request = CreateObject("roUrlTransfer")
+  request.SetCertificatesFile("common:/certs/ca-bundle.crt")
+  request.InitClientCertificates()
+  request.SetUrl(url)
+  port = CreateObject("roMessagePort")
+  request.SetPort(port)
+
+  ok = request.AsyncGetToString()
+  if ok <> true
+    return { ok: false, status: 0, failureReason: "Could not start request", json: invalid }
+  end if
+
+  msg = wait(10000, port)
+  if type(msg) <> "roUrlEvent"
+    return { ok: false, status: 0, failureReason: "Request timeout", json: invalid }
+  end if
+
+  status = msg.GetResponseCode()
+  failureReason = msg.GetFailureReason()
+  body = msg.GetString()
+
+  if status < 200 or status >= 300
+    return { ok: false, status: status, failureReason: failureReason, json: invalid }
+  end if
+
+  parsed = ParseJson(body)
+  if parsed = invalid
+    return { ok: false, status: status, failureReason: "Invalid JSON response", json: invalid }
+  end if
+
+  return { ok: true, status: status, failureReason: failureReason, json: parsed }
+end function
+
+function normalizeBaseUrl(raw as String) as String
+  if raw = invalid or raw = "" then return "https://lockers.bvillebiga.com"
+  value = Trim(raw)
+  if Left(value, 7) <> "http://" and Left(value, 8) <> "https://" then
+    value = "https://" + value
+  end if
+  while Right(value, 1) = "/"
+    value = Left(value, Len(value) - 1)
+  end while
+  return value
+end function
+
+function joinApiUrl(path as String) as String
+  p = path
+  if Left(p, 1) <> "/" then
+    p = "/" + p
+  end if
+  return m.baseUrl + p
 end function
 
 sub renderPairingState(statusText as String)
