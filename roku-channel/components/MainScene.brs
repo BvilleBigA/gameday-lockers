@@ -1,4 +1,26 @@
 sub init()
+  ' --- BULLETPROOF TIMER CREATION ---
+  m.pollTimer = m.top.findNode("pollTimer")
+  if m.pollTimer = invalid then
+    m.pollTimer = CreateObject("roSGNode", "Timer")
+    m.pollTimer.id = "pollTimer"
+    m.pollTimer.duration = 5
+    m.pollTimer.repeat = true
+    m.top.appendChild(m.pollTimer)
+  end if
+  m.pollTimer.control = "start"
+
+  m.fxTimer = m.top.findNode("fxTimer")
+  if m.fxTimer = invalid then
+    m.fxTimer = CreateObject("roSGNode", "Timer")
+    m.fxTimer.id = "fxTimer"
+    m.fxTimer.duration = 0.5
+    m.fxTimer.repeat = true
+    m.top.appendChild(m.fxTimer)
+  end if
+  m.fxTimer.control = "start"
+  ' ----------------------------------
+
   m.baseUrl = normalizeBaseUrl("https://lockers.bvillebiga.com")
   if m.global <> invalid and m.global.baseUrl <> invalid and m.global.baseUrl <> "" then
     m.baseUrl = normalizeBaseUrl(m.global.baseUrl.Trim())
@@ -17,8 +39,13 @@ sub init()
   m.taskBusy = false
   m.lastTaskType = ""
   m.fxTick = 0
+ 
+  m.lastMediaUrl = ""
 
-  m.bgPoster = m.top.findNode("bgPoster")
+  m.contentPoster = m.top.findNode("contentPoster")
+  m.contentVideo = m.top.findNode("contentVideo")
+  m.contentGroup = m.top.findNode("contentGroup")
+  m.registrationGroup = m.top.findNode("registrationGroup")
   m.overlay = m.top.findNode("overlay")
   m.panelShadow = m.top.findNode("panelShadow")
   m.panelFrame = m.top.findNode("panelFrame")
@@ -30,9 +57,6 @@ sub init()
   m.statusLabel = m.top.findNode("statusLabel")
   m.codeLabel = m.top.findNode("codeLabel")
   m.helpLabel = m.top.findNode("helpLabel")
-  m.pollTimer = m.top.findNode("pollTimer")
-  m.fxTimer = m.top.findNode("fxTimer")
-
   m.pairingTask = m.top.findNode("pairingTask")
   if m.pairingTask = invalid then
     m.pairingTask = CreateObject("roSGNode", "PairingTask")
@@ -41,8 +65,8 @@ sub init()
   m.pairingTask.observeField("pairingCode", "onPairingCodeReceived")
   m.pairingTask.observeField("resultVersion", "onPairingTaskResult")
 
-  m.pollTimer.observeField("fire", "onPollTimer")
-  m.fxTimer.observeField("fire", "onFxTimer")
+  if m.pollTimer <> invalid then m.pollTimer.observeField("fire", "onPollTimer")
+  if m.fxTimer <> invalid then m.fxTimer.observeField("fire", "onFxTimer")
 
   renderPreparingState()
 
@@ -63,9 +87,6 @@ sub init()
     m.pairingCode = ""
     startPairingTask("requestServerPairingCode", "")
   end if
-
-  m.pollTimer.control = "start"
-  m.fxTimer.control = "start"
 end sub
 
 sub onPollTimer()
@@ -73,8 +94,12 @@ sub onPollTimer()
   if not isValidPairingCode(m.pairingCode) then return
 
   if m.currentMode = "pairing"
+    print "Poll Timer: Checking if admin entered code..."
     startPairingTask("checkRegistration", "")
   else
+    print "Poll Timer: Checking dashboard for new content..."
+    m.pollTimer.duration = 10 ' Slow down to every 10 seconds once live
+    
     segment = m.pairingCode
     if m.isPaired and m.displayId > 0 then segment = m.displayId.ToStr()
     startPairingTask("loadCurrentScene", segment)
@@ -170,6 +195,7 @@ sub handleRegistrationResult(result as Object)
     m.isPaired = id > 0
     saveDisplayState(m.displayId, m.isPaired)
     m.currentMode = "live"
+ 
     showContentGroup()
     segment = m.pairingCode
     if m.isPaired and m.displayId > 0 then segment = m.displayId.ToStr()
@@ -197,6 +223,13 @@ sub handleCurrentSceneResult(result as Object)
     return
   end if
 
+  ' --- NEW SPYGLASS: Print exactly what the server sends ---
+  if result.json <> invalid then
+    print "--- SERVER SENT THIS DATA ---"
+    print FormatJson(result.json)
+    print "-----------------------------"
+  end if
+
   if result.json = invalid or result.json.scene = invalid
     renderLiveErrorState("Invalid response from server.")
     return
@@ -205,10 +238,16 @@ sub handleCurrentSceneResult(result as Object)
   scene = result.json.scene
   if scene.backgroundUrl <> invalid and scene.backgroundUrl <> ""
     mediaUrl = ensureAbsoluteMediaUrl(scene.backgroundUrl)
-    print "Downloading image: "; mediaUrl
-    m.bgPoster.visible = true
-    m.bgPoster.uri = mediaUrl
+    
+    if mediaUrl <> m.lastMediaUrl
+      print "New scheduled media found! Loading: "; mediaUrl
+      m.lastMediaUrl = mediaUrl
+      playMedia(mediaUrl)
+    end if
+  else
+    print "WARNING: Roku doesn't know how to read this specific payload yet!"
   end if
+  
   showContentGroup()
 end sub
 
@@ -227,11 +266,14 @@ sub hideOverlayUi()
 end sub
 
 sub showContentGroup()
-  m.bgPoster.visible = true
+  if m.registrationGroup <> invalid then m.registrationGroup.visible = false
+  if m.contentGroup <> invalid then m.contentGroup.visible = true
   hideOverlayUi()
 end sub
 
 sub showOverlayUi()
+  if m.contentGroup <> invalid then m.contentGroup.visible = true
+  if m.registrationGroup <> invalid then m.registrationGroup.visible = true
   m.overlay.visible = true
   m.panelShadow.visible = true
   m.panelFrame.visible = true
@@ -369,3 +411,37 @@ sub saveDisplayState(displayId as Integer, isPaired as Boolean)
   end if
   section.Flush()
 end sub
+
+' --- NEW MEDIA ROUTING FUNCTIONS ---
+
+sub playMedia(url as String)
+  if isVideoUrl(url)
+    ' Hide Poster, Show Video
+    m.contentPoster.visible = false
+    m.contentVideo.visible = true
+    m.contentVideo.control = "stop"
+    
+    ' Tell Roku to play the video
+    vidContent = CreateObject("roSGNode", "ContentNode")
+    vidContent.url = url
+    vidContent.streamformat = "mp4" 
+    m.contentVideo.content = vidContent
+    m.contentVideo.control = "play"
+  else
+    ' Hide Video, Show Poster
+    m.contentVideo.control = "stop"
+    m.contentVideo.visible = false
+    
+    m.contentPoster.visible = true
+    m.contentPoster.opacity = 1.0
+    m.contentPoster.uri = url
+  end if
+end sub
+
+function isVideoUrl(url as String) as Boolean
+  lUrl = LCase(url)
+  if Instr(1, lUrl, ".mp4") > 0 return true
+  if Instr(1, lUrl, ".mov") > 0 return true
+  if Instr(1, lUrl, ".m3u8") > 0 return true
+  return false
+end function
